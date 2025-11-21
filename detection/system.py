@@ -1,4 +1,5 @@
 ﻿# detection/system.py
+import math
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Optional
@@ -280,8 +281,11 @@ class HMMDetect:
     def __init__(self, config: Dict[str, Any]):
         self.threshold = config.get('threshold', 0.65)
         self.n_components = config.get('n_components', 3)
+        self.buffer_size = config.get('buffer_size', 100)
         self.model = hmm.GaussianHMM(n_components=self.n_components, covariance_type="diag", n_iter=100, random_state=42)
-        self.baseline_log_likelihood = None # Changed to store log likelihood
+        self.baseline_log_likelihood = None
+        self.is_fitted = False
+        self.training_buffer = []
         
     def detect(self, features: np.ndarray, raw_features: Dict[str, Any]) -> Dict[str, Any]:
         if features.shape[1] < self.n_components: # Need at least n_components samples
@@ -414,7 +418,7 @@ class MatrixProfileDetector:
             # Normalize discord value to a 0-1 score
             # A simple normalization, could be more sophisticated
             median_mp_value = np.median(mp[:, 0])
-            score = 1 - np.exp(-discord_value / (median_mp_value + 1e-10)) # Add epsilon to prevent division by zero
+            score = 1 - math.exp(-discord_value / (median_mp_value + 1e-10)) # Add epsilon to prevent division by zero
             score = np.clip(score, 0.0, 1.0)
             
             return {
